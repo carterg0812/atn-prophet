@@ -1,6 +1,8 @@
 src/plots
 src/models
 .env
+/.env
+env
 .env/
 .venv/
 env/
