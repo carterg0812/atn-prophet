@@ -14,7 +14,7 @@ from db.db_utils import (
     list_models_in_db,
     delete_model_from_db,
     DB_CONFIG
-)
+) 
 
 # Import from training modules
 from training.data_fetching import fetch_data_from_strapi, post_forecast_to_strapi
