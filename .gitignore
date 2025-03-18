@@ -1,2 +1,7 @@
-plots
-models
+src/plots
+src/models
+.env
+.env/
+.venv/
+env/
+venv/
