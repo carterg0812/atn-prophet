@@ -40,9 +40,9 @@ def train_model_in_background(dealership_id):
             # Generate forecast
             forecast_df = model.make_future_dataframe(periods=30)
             forecast = model.predict(forecast_df)
-
+            future_forecast = forecast[forecast["ds"] > df["ds"].max()]
             # Post forecast to Strapi
-            post_forecast_to_strapi(dealership_id, metric, forecast)
+            post_forecast_to_strapi(dealership_id, metric, future_forecast)
 
         print(f"✅ Model training completed for dealership {dealership_id}")
     except Exception as e:
