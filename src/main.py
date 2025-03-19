@@ -4,6 +4,7 @@ import numpy as np
 import os
 import sys
 from datetime import datetime
+from threading import Thread
 
 # Ensure the src directory is in the Python path
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
@@ -28,17 +29,9 @@ PLOT_DIR = "src/plots"
 # Ensure directories exist
 os.makedirs(PLOT_DIR, exist_ok=True)
 
-@app.route("/train", methods=["POST"])
-def train_model():
+def train_model_in_background(dealership_id):
     try:
-        # Extract dealership_id from the POST request
-        data = request.get_json()
-        dealership_id = data.get("dealership_id")
-
-        if not dealership_id:
-            return jsonify({"error": "Missing required parameter: dealership_id"}), 400
-
-        # Fetch data from Strapi for the given dealership
+        print(f"🚀 Starting model training for dealership {dealership_id}...")
         df = fetch_data_from_strapi(dealership_id)
 
         for metric in ["total_deals", "house_gross", "back_end_gross"]:
@@ -49,11 +42,32 @@ def train_model():
             forecast_df = model.make_future_dataframe(periods=30)
             forecast = model.predict(forecast_df)
 
-            # Post forecast to Strapi for the specific dealership
+            # Post forecast to Strapi
             post_forecast_to_strapi(dealership_id, metric, forecast)
 
-        return jsonify({"status": "success", "message": f"Models trained and forecasts posted for dealership {dealership_id}"})
-    
+        print(f"✅ Model training completed for dealership {dealership_id}")
+    except Exception as e:
+        print(f"❌ Error training model for dealership {dealership_id}: {e}")
+
+# Flask Route - Returns Response Immediately
+@app.route("/train", methods=["POST"])
+def train_model():
+    try:
+        data = request.get_json()
+        dealership_id = data.get("dealership_id")
+
+        if not dealership_id:
+            return jsonify({"error": "Missing dealership_id"}), 400
+
+        # ✅ Run training in a background thread (non-blocking)
+        thread = Thread(target=train_model_in_background, args=(dealership_id,))
+        thread.start()
+
+        return jsonify({
+            "status": "success",
+            "message": f"Model training started for dealership {dealership_id}. The job is running in the background."
+        }), 202  # 202 Accepted (processing in background)
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

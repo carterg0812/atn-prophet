@@ -32,7 +32,9 @@ requests==2.32.3
 six==1.17.0
 stanio==0.5.1
 style==1.1.0
+thread==2.0.5
 tqdm==4.67.1
+typing_extensions==4.12.2
 tzdata==2025.1
 update==0.0.1
 urllib3==2.3.0
