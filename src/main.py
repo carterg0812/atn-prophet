@@ -37,8 +37,6 @@ def train_model_in_background(dealership_id):
         df = preprocess_data(data)
         for metric in ["total_deals", "house_gross", "back_end_gross"]:
             model = train_forecast_model(df, metric)
-            save_model(model, f"src/models/{dealership_id}_{metric}.pkl")
-
             # Generate forecast
             forecast_df = model.make_future_dataframe(periods=30)
             forecast = model.predict(forecast_df)
