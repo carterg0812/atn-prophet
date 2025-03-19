@@ -126,11 +126,15 @@ def fetch_data_from_strapi(ATN_ID):
 def post_forecast_to_strapi(dealership_id, metric, forecast_df):
     """
     Posts or updates forecast data in Strapi, filtering by dealership ID.
+    Converts timestamps to string before sending JSON.
     """
     headers = {
         "Authorization": f"Bearer {STRAPI_BEARER_TOKEN}",
         "Content-Type": "application/json"
     }
+
+    # ✅ Convert Timestamp objects to ISO format
+    forecast_df['ds'] = forecast_df['ds'].dt.strftime('%Y-%m-%d')  
 
     forecast_data = {
         "dealership": dealership_id,
@@ -139,7 +143,7 @@ def post_forecast_to_strapi(dealership_id, metric, forecast_df):
     }
 
     response = requests.get(
-        f"{STRAPI_API_URL}/forecasts?filters[dealership][id][$eq]={dealership_id}&filters[metric][$eq]={metric}",
+        f"{STRAPI_API_URL}/forecasts?filters[dealership][documentId][$eq]={dealership_id}&filters[metric][$eq]={metric}",
         headers=headers
     )
 
