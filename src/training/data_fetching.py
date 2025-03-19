@@ -153,7 +153,7 @@ def post_forecast_to_strapi(ATN_ID, metric, forecast_df):
     if response.status_code == 200:
         existing_forecasts = response.json().get("data", [])
         if existing_forecasts:
-            forecast_id = existing_forecasts[0]["id"]
+            forecast_id = existing_forecasts[0]["documentId"]
             
             update_response = requests.put(
                 f"{STRAPI_FORECAST_URL}/{forecast_id}",
