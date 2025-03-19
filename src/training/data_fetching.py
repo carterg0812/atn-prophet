@@ -138,7 +138,9 @@ def post_forecast_to_strapi(ATN_ID, metric, forecast_df):
     forecast_df['ds'] = forecast_df['ds'].dt.strftime('%Y-%m-%d')  
 
     forecast_data = {
-        "dealership": {"documentId": dealership_id},
+        "dealership": {"connect": {
+        "documentId": dealership_id
+      }},
         "metric": metric,
         "forecast": forecast_df[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].to_dict('records')
     }
