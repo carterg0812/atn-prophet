@@ -40,7 +40,7 @@ def train_model_in_background(dealership_id):
             # Generate forecast
             forecast_df = model.make_future_dataframe(periods=30)
             forecast = model.predict(forecast_df)
-            future_forecast = forecast[forecast["ds"] > df["ds"].max()]
+            future_forecast = forecast[forecast['ds'] > df['ds'].max()].copy()
             # Post forecast to Strapi
             post_forecast_to_strapi(dealership_id, metric, future_forecast)
 
