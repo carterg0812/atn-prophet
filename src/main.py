@@ -22,6 +22,7 @@ from training.data_fetching import fetch_data_from_strapi, post_forecast_to_stra
 from training.model_training import train_forecast_model
 from training.model_saving import save_model, load_model
 from training.visualization import plot_forecast
+from training.data_preprocessing import preprocess_data
 
 app = Flask(__name__)
 PLOT_DIR = "src/plots"
@@ -32,8 +33,8 @@ os.makedirs(PLOT_DIR, exist_ok=True)
 def train_model_in_background(dealership_id):
     try:
         print(f"🚀 Starting model training for dealership {dealership_id}...")
-        df = fetch_data_from_strapi(dealership_id)
-
+        data = fetch_data_from_strapi(dealership_id)
+        df = preprocess_data(data)
         for metric in ["total_deals", "house_gross", "back_end_gross"]:
             model = train_forecast_model(df, metric)
             save_model(model, f"src/models/{dealership_id}_{metric}.pkl")
