@@ -1,6 +1,7 @@
 import os
 import requests
 import pandas as pd
+import time
 if os.getenv("ENV", "development") == "development":
     import dotenv
     dotenv.load_dotenv()
@@ -107,7 +108,7 @@ def fetch_data_from_strapi(ATN_ID):
         print(f"📄 Retrieved {len(sales_data)} records (Start: {start})")
 
         start += page_size  # Move to the next page
-
+        time.sleep(0.1) 
     if not all_records:
         raise ValueError("❌ No records retrieved from Strapi!")
 
