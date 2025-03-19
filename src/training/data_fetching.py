@@ -124,7 +124,7 @@ def fetch_data_from_strapi(ATN_ID):
 
     return df
 
-def post_forecast_to_strapi(dealership_id, metric, forecast_df):
+def post_forecast_to_strapi(ATN_ID, metric, forecast_df):
     """
     Posts or updates forecast data in Strapi, filtering by dealership ID.
     Converts timestamps to string before sending JSON.
@@ -133,12 +133,12 @@ def post_forecast_to_strapi(dealership_id, metric, forecast_df):
         "Authorization": f"Bearer {STRAPI_BEARER_TOKEN}",
         "Content-Type": "application/json"
     }
-
+    dealership_id = get_dealership_id_by_atn(ATN_ID)
     # ✅ Convert Timestamp objects to ISO format
     forecast_df['ds'] = forecast_df['ds'].dt.strftime('%Y-%m-%d')  
 
     forecast_data = {
-        "dealership": dealership_id,
+        "dealership": {"documentId": dealership_id},
         "metric": metric,
         "forecast": forecast_df[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].to_dict('records')
     }
