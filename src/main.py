@@ -31,19 +31,29 @@ os.makedirs(PLOT_DIR, exist_ok=True)
 @app.route("/train", methods=["POST"])
 def train_model():
     try:
-        df = fetch_data_from_strapi()
+        # Extract dealership_id from the POST request
+        data = request.get_json()
+        dealership_id = data.get("dealership_id")
+
+        if not dealership_id:
+            return jsonify({"error": "Missing required parameter: dealership_id"}), 400
+
+        # Fetch data from Strapi for the given dealership
+        df = fetch_data_from_strapi(dealership_id)
+
         for metric in ["total_deals", "house_gross", "back_end_gross"]:
             model = train_forecast_model(df, metric)
-            save_model(model, f"src/models/global_{metric}.pkl")
-            
+            save_model(model, f"src/models/{dealership_id}_{metric}.pkl")
+
             # Generate forecast
             forecast_df = model.make_future_dataframe(periods=30)
             forecast = model.predict(forecast_df)
-            
-            # Post forecast to Strapi
-            post_forecast_to_strapi("global", metric, forecast)
-        
-        return jsonify({"status": "success", "message": "Models trained and forecasts posted successfully"})
+
+            # Post forecast to Strapi for the specific dealership
+            post_forecast_to_strapi(dealership_id, metric, forecast)
+
+        return jsonify({"status": "success", "message": f"Models trained and forecasts posted for dealership {dealership_id}"})
+    
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

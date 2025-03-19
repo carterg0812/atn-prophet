@@ -1,9 +1,9 @@
 import os
 import requests
 import pandas as pd
-import dotenv
-
-dotenv.load_dotenv()
+if os.getenv("ENV", "development") == "development":
+    import dotenv
+    dotenv.load_dotenv()
 
 STRAPI_BEARER_TOKEN = os.getenv("STRAPI_BEARER_TOKEN")
 STRAPI_GRAPHQL_URL = os.getenv("STRAPI_GRAPHQL_URL")
