@@ -9,6 +9,7 @@ if os.getenv("ENV", "development") == "development":
 STRAPI_BEARER_TOKEN = os.getenv("STRAPI_BEARER_TOKEN")
 STRAPI_GRAPHQL_URL = os.getenv("STRAPI_GRAPHQL_URL")
 STRAPI_API_URL = f"{os.getenv('STRAPI_API_URL')}/dealerships"
+STRAPI_FORECAST_URL = f"{os.getenv('STRAPI_API_URL')}/forecasts"
 
 def get_dealership_id_by_atn(atn_id):
     """
@@ -143,7 +144,7 @@ def post_forecast_to_strapi(dealership_id, metric, forecast_df):
     }
 
     response = requests.get(
-        f"{STRAPI_API_URL}/forecasts?filters[dealership][documentId][$eq]={dealership_id}&filters[metric][$eq]={metric}",
+        f"{STRAPI_FORECAST_URL}?filters[dealership][documentId][$eq]={dealership_id}&filters[metric][$eq]={metric}",
         headers=headers
     )
 
@@ -153,7 +154,7 @@ def post_forecast_to_strapi(dealership_id, metric, forecast_df):
             forecast_id = existing_forecasts[0]["id"]
             
             update_response = requests.put(
-                f"{STRAPI_API_URL}/forecasts/{forecast_id}",
+                f"{STRAPI_FORECAST_URL}/{forecast_id}",
                 json={"data": forecast_data},
                 headers=headers
             )
@@ -164,10 +165,10 @@ def post_forecast_to_strapi(dealership_id, metric, forecast_df):
             else:
                 print(f"⚠️ Failed to update forecast: {update_response.status_code} - {update_response.text}")
 
-            requests.delete(f"{STRAPI_API_URL}/forecasts/{forecast_id}", headers=headers)
+            requests.delete(f"{STRAPI_FORECAST_URL}/{forecast_id}", headers=headers)
 
     post_response = requests.post(
-        f"{STRAPI_API_URL}/forecasts",
+        f"{STRAPI_FORECAST_URL}",
         json={"data": forecast_data},
         headers=headers
     )
