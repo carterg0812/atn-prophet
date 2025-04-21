@@ -2,6 +2,7 @@ import os
 import requests
 import pandas as pd
 import time
+from datetime import datetime
 if os.getenv("ENV", "development") == "development":
     import dotenv
     dotenv.load_dotenv()
@@ -58,11 +59,19 @@ def fetch_data_from_strapi(ATN_ID):
     }
     dealership_id = get_dealership_id_by_atn(ATN_ID)
     print(f"Fetched Dealership ID: {dealership_id}")
+    
+    # Get today's date in ISO format with time
+    today = datetime.now().strftime('%Y-%m-%dT00:00:00.000Z')
+    
     query = """
-    query FetchSales($dealershipId: ID!, $limit: Int!, $start: Int!) {
+    query FetchSales($dealershipId: ID!, $limit: Int!, $start: Int!, $today: DateTime!) {
         sales(
             pagination: { start: $start, limit: $limit }
-            filters: { dealership: { documentId: { eq: $dealershipId } }, sales_type: { eq: "R" } }
+            filters: { 
+                dealership: { documentId: { eq: $dealershipId } }, 
+                sales_type: { eq: "R" },
+                deal_date: { lte: $today }
+            }
             sort: "createdAt"
         ) {
             documentId
@@ -85,7 +94,8 @@ def fetch_data_from_strapi(ATN_ID):
         variables = {
             "dealershipId": dealership_id,
             "limit": page_size,
-            "start": start
+            "start": start,
+            "today": today
         }
 
         response = requests.post(STRAPI_GRAPHQL_URL, json={"query": query, "variables": variables}, headers=headers)
