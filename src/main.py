@@ -18,11 +18,11 @@ from db.db_utils import (
 ) 
 
 # Import from training modules
-from training.data_fetching import fetch_data_from_strapi, post_forecast_to_strapi
+from training.data_fetching import fetch_data_from_strapi, fetch_ro_data_from_strapi, post_forecast_to_strapi
 from training.model_training import train_forecast_model
 from training.model_saving import save_model, load_model
 from training.visualization import plot_forecast
-from training.data_preprocessing import preprocess_data
+from training.data_preprocessing import preprocess_data, preprocess_ro_data
 
 app = Flask(__name__)
 PLOT_DIR = "src/plots"
@@ -42,6 +42,16 @@ def train_model_in_background(dealership_id):
             forecast = model.predict(forecast_df)
             future_forecast = forecast[forecast['ds'] > df['ds'].max()].copy()
             # Post forecast to Strapi
+            post_forecast_to_strapi(dealership_id, metric, future_forecast)
+
+        # Train repair order forecasts
+        ro_data = fetch_ro_data_from_strapi(dealership_id)
+        ro_df = preprocess_ro_data(ro_data)
+        for metric in ["ro_count", "ro_gross"]:
+            model, _ = train_forecast_model(ro_df, metric)
+            forecast_df = model.make_future_dataframe(periods=30)
+            forecast = model.predict(forecast_df)
+            future_forecast = forecast[forecast['ds'] > ro_df['ds'].max()].copy()
             post_forecast_to_strapi(dealership_id, metric, future_forecast)
 
         print(f"✅ Model training completed for dealership {dealership_id}")
@@ -92,6 +102,10 @@ def delete_model(dealership, metric):
 @app.route("/plots/<path:filename>")
 def serve_plot(filename):
     return send_from_directory(PLOT_DIR, filename)
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"}), 200
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
