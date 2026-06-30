@@ -134,6 +134,83 @@ def fetch_data_from_strapi(ATN_ID):
 
     return df
 
+def fetch_ro_data_from_strapi(ATN_ID):
+    """
+    Fetch repair order data from Strapi using GraphQL, filtering by dealership ID.
+    """
+    headers = {
+        "Authorization": f"Bearer {STRAPI_BEARER_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    dealership_id = get_dealership_id_by_atn(ATN_ID)
+    print(f"Fetched Dealership ID for RO: {dealership_id}")
+
+    today = datetime.now().strftime('%Y-%m-%dT00:00:00.000Z')
+
+    query = """
+    query FetchRepairOrders($dealershipId: ID!, $limit: Int!, $start: Int!, $today: DateTime!) {
+        repairOrders(
+            pagination: { start: $start, limit: $limit }
+            filters: {
+                dealership: { documentId: { eq: $dealershipId } },
+                closed_date: { lte: $today }
+            }
+            sort: "closed_date"
+        ) {
+            documentId
+            closed_date
+            labor_total
+            parts_total
+            labor_cost
+            parts_cost
+            dealership {
+                documentId
+            }
+        }
+    }
+    """
+
+    all_records = []
+    page_size = 500
+    start = 0
+
+    while True:
+        variables = {
+            "dealershipId": dealership_id,
+            "limit": page_size,
+            "start": start,
+            "today": today
+        }
+
+        response = requests.post(STRAPI_GRAPHQL_URL, json={"query": query, "variables": variables}, headers=headers)
+
+        if response.status_code != 200:
+            print(f"❌ Error fetching RO data: {response.status_code} - {response.text[:200]}")
+            break
+
+        response_json = response.json()
+        ro_data = response_json.get("data", {}).get("repairOrders", [])
+        if isinstance(ro_data, dict):
+            ro_data = ro_data.get("data", [])
+        if not ro_data:
+            break
+
+        all_records.extend(ro_data)
+        print(f"📄 Retrieved {len(ro_data)} RO records (Start: {start})")
+
+        start += page_size
+        time.sleep(0.1)
+
+    if not all_records:
+        raise ValueError("❌ No RO records retrieved from Strapi!")
+
+    df = pd.DataFrame(all_records)
+    print(f"✅ Unique count of RO 'documentId': {df['documentId'].nunique()} / Total Records: {len(df)}")
+    print(f"✅ RO fields retrieved: {', '.join(df.columns) if not df.empty else 'None'}")
+
+    return df
+
+
 def post_forecast_to_strapi(ATN_ID, metric, forecast_df):
     """
     Posts or updates forecast data in Strapi, filtering by dealership ID.

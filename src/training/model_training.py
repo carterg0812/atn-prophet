@@ -37,8 +37,47 @@ def train_forecast_model(df, metric="total_deals"):
     if len(df) < 2:
         raise ValueError(f"⚠️ Not enough data to train the model for metric: {metric}")
 
+    num_days = len(df)
+
+    # Yearly seasonality requires ~1 year of data to be meaningful; enabling it with
+    # sparse data causes Prophet to invent a seasonal curve that produces unreliable
+    # (often negative) extrapolations.
+    yearly_seasonality = num_days >= 365
+
+    # Weekly seasonality requires a full year of data to be reliable — with less data
+    # the day-of-week pattern is too noisy and produces volatile forecasts.
+    weekly_seasonality = num_days >= 365
+
+    # Scale aggressiveness of trend/seasonality fitting based on available data.
+    # Locations with < 365 days get tighter priors to prevent overfitting noise.
+    # >= 365 days uses Prophet defaults so established locations are unaffected.
+    if num_days < 30:
+        changepoint_prior_scale = 0.01
+        seasonality_prior_scale = 0.5
+        n_changepoints = 5
+    elif num_days < 90:
+        changepoint_prior_scale = 0.03
+        seasonality_prior_scale = 0.5
+        n_changepoints = 10
+    elif num_days < 365:
+        changepoint_prior_scale = 0.03
+        seasonality_prior_scale = 0.5
+        n_changepoints = 15
+    else:
+        changepoint_prior_scale = 0.1   # Prophet default
+        seasonality_prior_scale = 10.0  # Prophet default
+        n_changepoints = 25             # Prophet default
+
+    print(f"📊 Data points: {num_days} | yearly_seasonality={yearly_seasonality} | weekly_seasonality={weekly_seasonality} | changepoint_prior_scale={changepoint_prior_scale} | seasonality_prior_scale={seasonality_prior_scale} | n_changepoints={n_changepoints}")
+
     # ✅ Train the Prophet model
-    model = Prophet(yearly_seasonality=True, weekly_seasonality=True)
+    model = Prophet(
+        yearly_seasonality=yearly_seasonality,
+        weekly_seasonality=weekly_seasonality,
+        changepoint_prior_scale=changepoint_prior_scale,
+        seasonality_prior_scale=seasonality_prior_scale,
+        n_changepoints=n_changepoints,
+    )
     model.fit(df)
 
     # ✅ Generate a 30-day forecast
